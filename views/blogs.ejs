@@ -31,11 +31,13 @@
         <div class="postcontainer">
           <% user.posts.reverse().forEach((post)=>{ %>
           <div class="card border-2 border-zinc-600 rounded-md p-3 mb-2 bg-zinc-800 w-2/3">
-            <h4 class="text-zinc-400 mb-2">@ <%= user.username %></h4>
-            <p class="text-zinc-600"><%= post.content %></p>
+            <h4 class="text-zinc-300 mb-2">@ <%= user.username %></h4>
+            <p class="text-zinc-500"><%= post.content %></p>
             <small class="text-white inline-block mt-5 mb-2"> <%= post.likes.length %> likes</small>
             <div class="">
-              <a class="text-blue-500 me-5" href="/like/<%= post._id %>">Like</a>
+              <a class="text-blue-500 me-5" href="/like/<%= post._id %>">
+                <%= post.likes.indexOf(user._id )===-1 ? "Like" : "Unlike" %>
+              </a>
               <a class="text-zinc-500 me-5" href="/editPost/<%= post._id %>">Edit</a>
               <a class="text-red-500" href="/delete/<%= post._id %>">delete</a>
             </div>

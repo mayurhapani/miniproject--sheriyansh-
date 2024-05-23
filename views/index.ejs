@@ -7,7 +7,10 @@
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body>
-    <div class="bg-zinc-900 h-screen w-full">
+    <div class="bg-zinc-900 h-screen w-full p-5">
+      <div class="flex justify-end mt-5">
+        <a class="block px-4 py-2 rounded-lg bg-blue-500 text-white" href="/login"> Login</a>
+      </div>
       <h2 class="text-center text-white text-4xl mb-10 font-bold">Add User</h2>
       <form class="text-zinc-400" action="/addUser" method="post">
         <input

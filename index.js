@@ -100,14 +100,8 @@ app.get("/delete/:id", isLogedin, async (req, res) => {
   }
 });
 app.get("/editPost/:id", isLogedin, async (req, res) => {
-  const postId = req.params.id;
-  const userEmail = req.user.email;
-  const { content } = req.body;
-
-  const post = await postModel.findById(postId);
-  const user = await userModel.findOne({ email: userEmail });
-
-  req.render("edit");
+  const post = await postModel.findOne({ _id: req.params.id }).populate("user");
+  res.render("edit", { post });
 });
 
 // app.get("/delete/:id", isLogedin, async (req, res) => {
@@ -179,27 +173,18 @@ app.post("/post", isLogedin, async (req, res) => {
     console.log(err);
   }
 });
-// app.post("/editPost", isLogedin, async (req, res) => {
-//   try {
-//     const postId = req.params.id;
-//     const userEmail = req.user.email;
-//     const { content } = req.body;
+app.post("/editPost/:id", isLogedin, async (req, res) => {
+  try {
+    const post = await postModel.findOneAndUpdate(
+      { _id: req.params.id },
+      { content: req.body.content }
+    );
 
-//     const post = await postModel.findById(postId);
-
-//     if (post.userId != req.user._id) {
-//       return res.status(403).send("Unauthorized");
-//     }
-
-//     const user = await userModel.findOne({ email: req.user.email });
-
-//     await user.save();
-
-//     res.redirect("/blogs");
-//   } catch (err) {
-//     console.log(err);
-//   }
-// });
+    res.redirect("/blogs");
+  } catch (err) {
+    console.log(err);
+  }
+});
 
 app.listen(port, (err) => {
   if (!err) console.log("Server is running on http://localhost:" + port);
