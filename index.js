@@ -53,9 +53,76 @@ app.get("/logout", async (req, res) => {
   }
 });
 app.get("/blogs", isLogedin, async (req, res) => {
-  console.log(req.user);
-  res.render("blogs");
+  const user = await userModel.findOne({ email: req.user.email }).populate("posts");
+  res.render("blogs", { user });
 });
+app.get("/like/:id", isLogedin, async (req, res) => {
+  const post = await postModel.findOne({ _id: req.params.id }).populate("user");
+
+  if (post.likes.indexOf(req.user.userid) === -1) {
+    post.likes.push(req.user.userid);
+  } else {
+    post.likes.splice(post.likes.indexOf(req.user.userid), 1);
+  }
+
+  await post.save();
+  res.redirect("/blogs");
+});
+app.get("/delete/:id", isLogedin, async (req, res) => {
+  try {
+    const postId = req.params.id;
+    const userEmail = req.user.email;
+
+    const post = await postModel.findById(postId);
+    if (!post) {
+      return res.status(404).send("Post not found");
+    }
+
+    if (post.userId != req.user._id) {
+      return res.status(403).send("Unauthorized");
+    }
+
+    const user = await userModel.findOne({ email: userEmail });
+    const postIndex = user.posts.indexOf(postId);
+    if (postIndex > -1) {
+      user.posts.splice(postIndex, 1);
+    } else {
+      return res.status(404).send("Post not found in user's posts");
+    }
+
+    await postModel.findByIdAndDelete(postId);
+    await user.save();
+
+    res.redirect("/blogs");
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Internal Server Error");
+  }
+});
+app.get("/editPost/:id", isLogedin, async (req, res) => {
+  const postId = req.params.id;
+  const userEmail = req.user.email;
+  const { content } = req.body;
+
+  const post = await postModel.findById(postId);
+  const user = await userModel.findOne({ email: userEmail });
+
+  req.render("edit");
+});
+
+// app.get("/delete/:id", isLogedin, async (req, res) => {
+//   try {
+//     const post = await postModel.findOne({ _id: req.params.id });
+//     const user = await userModel.findOne({ email: req.user.email });
+//     user.posts.splice(user.posts.indexOf(req.params.id), 1);
+//     await postModel.findOneAndDelete({ _id: req.params.id });
+//     await user.save();
+//     res.redirect("/blogs");
+//   } catch (err) {
+//     console.error(err);
+//     res.status(500).send("Internal Server Error");
+//   }
+// });
 
 app.post("/addUser", async (req, res) => {
   const { username, name, email, age, password } = req.body;
@@ -69,7 +136,7 @@ app.post("/addUser", async (req, res) => {
 
     const token = jwt.sign({ email, userid: user._id }, "abcdef");
     res.cookie("token", token);
-    res.redirect("/");
+    res.redirect("/login");
   } catch (err) {
     console.log(err);
   }
@@ -86,13 +153,53 @@ app.post("/login", async (req, res) => {
     if (!result) return res.redirect("/login");
 
     res.status(200);
-    const token = jwt.sign({ email, userid: user._id }, "abcdef", { expiresIn: "1m" });
+    const token = jwt.sign({ email, userid: user._id }, "abcdef", { expiresIn: "24h" });
     res.cookie("token", token);
     res.redirect("/blogs");
   } catch (err) {
     console.log(err);
   }
 });
+
+app.post("/post", isLogedin, async (req, res) => {
+  try {
+    const { content } = req.body;
+    const user = await userModel.findOne({ email: req.user.email });
+
+    let post = await postModel.create({
+      user: user._id,
+      content,
+    });
+
+    user.posts.push(post._id);
+    await user.save();
+
+    res.redirect("/blogs");
+  } catch (err) {
+    console.log(err);
+  }
+});
+// app.post("/editPost", isLogedin, async (req, res) => {
+//   try {
+//     const postId = req.params.id;
+//     const userEmail = req.user.email;
+//     const { content } = req.body;
+
+//     const post = await postModel.findById(postId);
+
+//     if (post.userId != req.user._id) {
+//       return res.status(403).send("Unauthorized");
+//     }
+
+//     const user = await userModel.findOne({ email: req.user.email });
+
+//     await user.save();
+
+//     res.redirect("/blogs");
+//   } catch (err) {
+//     console.log(err);
+//   }
+// });
 
 app.listen(port, (err) => {
   if (!err) console.log("Server is running on http://localhost:" + port);
